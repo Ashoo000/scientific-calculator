@@ -1,653 +1,462 @@
 import streamlit as st
-import math
+import streamlit.components.v1 as components
 
-# -------------------------------------------------
-# PAGE CONFIG
-# -------------------------------------------------
 st.set_page_config(
-    page_title="Scientific Calculator",
+    page_title="Scientific Calculator - Ayesha khaliq",
     page_icon="🧮",
-    layout="centered"
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
-# -------------------------------------------------
-# CUSTOM CSS
-# -------------------------------------------------
 st.markdown("""
 <style>
-
-.stApp {
-    background: linear-gradient(135deg, #0f172a, #1e293b);
-}
-
-.main-title {
-    text-align: center;
-    font-size: 42px;
-    font-weight: 800;
-    color: #38bdf8;
-    margin-bottom: 5px;
-}
-
-.subtitle {
-    text-align: center;
-    color: #94a3b8;
-    font-size: 16px;
-    margin-bottom: 25px;
-}
-
-.calculator {
-    max-width: 650px;
-    margin: auto;
-    padding: 25px;
-    border-radius: 25px;
-    background: rgba(15, 23, 42, 0.95);
-    box-shadow: 0px 15px 50px rgba(0,0,0,0.45);
-}
-
-.result-box {
-    background: #020617;
-    border: 1px solid #334155;
-    border-radius: 15px;
-    padding: 20px;
-    text-align: right;
-    margin-bottom: 20px;
-}
-
-.result-label {
-    color: #64748b;
-    font-size: 14px;
-}
-
-.result-value {
-    color: #f8fafc;
-    font-size: 36px;
-    font-weight: bold;
-    word-wrap: break-word;
-}
-
-div.stButton > button {
-    width: 100%;
-    height: 52px;
-    border-radius: 12px;
-    font-size: 17px;
-    font-weight: 600;
-    border: 1px solid #334155;
-    background: #1e293b;
-    color: white;
-    transition: 0.2s;
-}
-
-div.stButton > button:hover {
-    border-color: #38bdf8;
-    color: #38bdf8;
-}
-
-.section-title {
-    color: #38bdf8;
-    font-size: 18px;
-    font-weight: bold;
-    margin-top: 15px;
-    margin-bottom: 8px;
-}
-
-.history-item {
-    background: #1e293b;
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 5px;
-    color: #cbd5e1;
-}
-
+    .stApp {
+        background: #0b1120;
+    }
+    header, footer, #MainMenu {
+        visibility: hidden;
+    }
+    .block-container {
+        padding-top: 1rem;
+        max-width: 700px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# -------------------------------------------------
-# SESSION STATE
-# -------------------------------------------------
-if "display" not in st.session_state:
-    st.session_state.display = "0"
-
-if "memory" not in st.session_state:
-    st.session_state.memory = 0
-
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-if "angle_mode" not in st.session_state:
-    st.session_state.angle_mode = "DEG"
-
-# -------------------------------------------------
-# FUNCTIONS
-# -------------------------------------------------
-def add_to_display(value):
-
-    if st.session_state.display == "0":
-        st.session_state.display = value
-    else:
-        st.session_state.display += value
-
-
-def clear_display():
-    st.session_state.display = "0"
-
-
-def delete_last():
-    if len(st.session_state.display) > 1:
-        st.session_state.display = st.session_state.display[:-1]
-    else:
-        st.session_state.display = "0"
-
-
-def calculate_expression():
-
-    expression = st.session_state.display
-
-    try:
-
-        # Replace calculator symbols with Python symbols
-        expression = expression.replace("×", "*")
-        expression = expression.replace("÷", "/")
-        expression = expression.replace("^", "**")
-        expression = expression.replace("π", str(math.pi))
-        expression = expression.replace("e", str(math.e))
-
-        # Allowed characters only
-        allowed = "0123456789+-*/(). "
-
-        if not all(char in allowed or char in "." for char in expression):
-            raise ValueError("Invalid expression")
-
-        result = eval(expression, {"__builtins__": {}}, {})
-
-        if not math.isfinite(float(result)):
-            raise ValueError("Invalid result")
-
-        result = round(result, 12)
-
-        st.session_state.history.insert(
-            0,
-            f"{st.session_state.display} = {result}"
-        )
-
-        st.session_state.history = st.session_state.history[:10]
-
-        st.session_state.display = str(result)
-
-    except Exception:
-        st.session_state.display = "Error"
-
-
-def scientific_function(function):
-
-    try:
-
-        x = float(st.session_state.display)
-
-        # -------------------------
-        # TRIG FUNCTIONS
-        # -------------------------
-
-        if function == "sin":
-
-            value = math.radians(x) if st.session_state.angle_mode == "DEG" else x
-            result = math.sin(value)
-
-        elif function == "cos":
-
-            value = math.radians(x) if st.session_state.angle_mode == "DEG" else x
-            result = math.cos(value)
-
-        elif function == "tan":
-
-            value = math.radians(x) if st.session_state.angle_mode == "DEG" else x
-
-            if abs(math.cos(value)) < 1e-12:
-                raise ValueError
-
-            result = math.tan(value)
-
-        # -------------------------
-        # INVERSE TRIG
-        # -------------------------
-
-        elif function == "asin":
-
-            if x < -1 or x > 1:
-                raise ValueError
-
-            result = math.asin(x)
-
-            if st.session_state.angle_mode == "DEG":
-                result = math.degrees(result)
-
-        elif function == "acos":
-
-            if x < -1 or x > 1:
-                raise ValueError
-
-            result = math.acos(x)
-
-            if st.session_state.angle_mode == "DEG":
-                result = math.degrees(result)
-
-        elif function == "atan":
-
-            result = math.atan(x)
-
-            if st.session_state.angle_mode == "DEG":
-                result = math.degrees(result)
-
-        # -------------------------
-        # LOG FUNCTIONS
-        # -------------------------
-
-        elif function == "log":
-
-            if x <= 0:
-                raise ValueError
-
-            result = math.log10(x)
-
-        elif function == "ln":
-
-            if x <= 0:
-                raise ValueError
-
-            result = math.log(x)
-
-        # -------------------------
-        # POWERS
-        # -------------------------
-
-        elif function == "square":
-
-            result = x ** 2
-
-        elif function == "cube":
-
-            result = x ** 3
-
-        elif function == "sqrt":
-
-            if x < 0:
-                raise ValueError
-
-            result = math.sqrt(x)
-
-        elif function == "cbrt":
-
-            result = math.copysign(abs(x) ** (1 / 3), x)
-
-        # -------------------------
-        # OTHER
-        # -------------------------
-
-        elif function == "factorial":
-
-            if x < 0 or not x.is_integer():
-                raise ValueError
-
-            result = math.factorial(int(x))
-
-        elif function == "reciprocal":
-
-            if x == 0:
-                raise ValueError
-
-            result = 1 / x
-
-        elif function == "absolute":
-
-            result = abs(x)
-
-        elif function == "percent":
-
-            result = x / 100
-
-        else:
-            return
-
-        result = round(result, 12)
-
-        st.session_state.history.insert(
-            0,
-            f"{function}({x}) = {result}"
-        )
-
-        st.session_state.history = st.session_state.history[:10]
-
-        st.session_state.display = str(result)
-
-    except Exception:
-
-        st.session_state.display = "Error"
-
-
-# -------------------------------------------------
-# HEADER
-# -------------------------------------------------
-st.markdown(
-    '<div class="main-title">🧮 Scientific Calculator</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<div class="subtitle">Powerful • Fast • Easy to Use</div>',
-    unsafe_allow_html=True
-)
-
-# -------------------------------------------------
-# CALCULATOR CONTAINER
-# -------------------------------------------------
-st.markdown('<div class="calculator">', unsafe_allow_html=True)
-
-# Display
-st.markdown(
-    f"""
-    <div class="result-box">
-        <div class="result-label">DISPLAY</div>
-        <div class="result-value">{st.session_state.display}</div>
+html_code = r"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 12px;
+    background: #0b1120;
+    color: #f1f5f9;
+    font-family: Arial, sans-serif;
+}
+
+.calculator {
+    max-width: 540px;
+    margin: 0 auto;
+    padding: 24px;
+    border: 1px solid #273449;
+    border-radius: 24px;
+    background: #111b2e;
+    box-shadow: 0 20px 50px #0005;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.title {
+    font-size: 21px;
+    font-weight: 700;
+}
+
+.subtitle {
+    color: #94a3b8;
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.mode {
+    background: #23334c;
+    color: #cbd5e1;
+    border: 0;
+    border-radius: 9px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.display {
+    background: #091321;
+    border: 1px solid #26374e;
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+    min-height: 125px;
+}
+
+.previous {
+    color: #94a3b8;
+    text-align: right;
+    font-size: 13px;
+    min-height: 20px;
+    overflow-wrap: anywhere;
+}
+
+#screen {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #f8fafc;
+    font-size: 30px;
+    text-align: right;
+    margin-top: 15px;
+    font-family: inherit;
+    caret-color: #38bdf8;
+}
+
+#screen::placeholder { color: #64748b; }
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 9px;
+}
+
+button {
+    border: 1px solid #293950;
+    border-radius: 11px;
+    padding: 14px 2px;
+    min-height: 48px;
+    color: #e2e8f0;
+    background: #1d2a40;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+}
+
+button:hover { background: #31435d; }
+button:active { transform: scale(.96); }
+
+.science { color: #7dd3fc; background: #172b42; }
+.operator { color: #93c5fd; background: #203654; }
+.clear { color: #fca5a5; background: #47232e; }
+.equal {
+    color: white;
+    background: #0284c7;
+    border-color: #0284c7;
+}
+.equal:hover { background: #0369a1; }
+
+.history {
+    margin-top: 20px;
+    padding-top: 14px;
+    border-top: 1px solid #293950;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+.history-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.history button {
+    min-height: auto;
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+#historyList {
+    max-height: 100px;
+    overflow-y: auto;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+}
+
+.footer {
+    text-align: center;
+    color: #64748b;
+    font-size: 11px;
+    margin-top: 18px;
+}
+
+@media(max-width: 420px) {
+    .calculator { padding: 14px; }
+    .grid { gap: 6px; }
+    button { font-size: 13px; min-height: 44px; }
+    #screen { font-size: 24px; }
+}
+</style>
+</head>
+
+<body>
+<div class="calculator">
+
+    <div class="header">
+        <div>
+            <div class="title">Scientific Calculator</div>
+            <div class="subtitle">By Ayesha khaliq • Precision • Performance</div>
+        </div>
+        <button class="mode" id="mode" onclick="toggleMode()">
+            DEG
+        </button>
     </div>
-    """,
-    unsafe_allow_html=True
-)
 
-# -------------------------------------------------
-# DEG / RAD
-# -------------------------------------------------
-col1, col2, col3 = st.columns([1, 1, 2])
-
-with col1:
-
-    if st.button(
-        "DEG" if st.session_state.angle_mode == "DEG" else "deg",
-        use_container_width=True
-    ):
-        st.session_state.angle_mode = "DEG"
-        st.rerun()
-
-with col2:
-
-    if st.button(
-        "RAD" if st.session_state.angle_mode == "RAD" else "rad",
-        use_container_width=True
-    ):
-        st.session_state.angle_mode = "RAD"
-        st.rerun()
-
-with col3:
-
-    st.caption(
-        f"Angle Mode: **{st.session_state.angle_mode}**"
-    )
-
-# -------------------------------------------------
-# MEMORY BUTTONS
-# -------------------------------------------------
-st.markdown(
-    '<div class="section-title">Memory</div>',
-    unsafe_allow_html=True
-)
-
-m1, m2, m3, m4 = st.columns(4)
-
-with m1:
-
-    if st.button("MC", use_container_width=True):
-        st.session_state.memory = 0
-        st.rerun()
-
-with m2:
-
-    if st.button("MR", use_container_width=True):
-        st.session_state.display = str(st.session_state.memory)
-        st.rerun()
-
-with m3:
-
-    if st.button("M+", use_container_width=True):
-
-        try:
-            st.session_state.memory += float(
-                st.session_state.display
-            )
-        except:
-            pass
-
-        st.rerun()
-
-with m4:
-
-    if st.button("M-", use_container_width=True):
-
-        try:
-            st.session_state.memory -= float(
-                st.session_state.display
-            )
-        except:
-            pass
-
-        st.rerun()
-
-# -------------------------------------------------
-# SCIENTIFIC FUNCTIONS
-# -------------------------------------------------
-st.markdown(
-    '<div class="section-title">Scientific Functions</div>',
-    unsafe_allow_html=True
-)
-
-row1 = st.columns(5)
-
-scientific_buttons = [
-    ("sin", "sin"),
-    ("cos", "cos"),
-    ("tan", "tan"),
-    ("asin", "asin"),
-    ("acos", "acos")
-]
-
-for col, (label, function) in zip(row1, scientific_buttons):
-
-    with col:
-
-        if st.button(label, use_container_width=True):
-            scientific_function(function)
-            st.rerun()
-
-
-row2 = st.columns(5)
-
-scientific_buttons = [
-    ("atan", "atan"),
-    ("log", "log"),
-    ("ln", "ln"),
-    ("√", "sqrt"),
-    ("x²", "square")
-]
-
-for col, (label, function) in zip(row2, scientific_buttons):
-
-    with col:
-
-        if st.button(label, use_container_width=True):
-            scientific_function(function)
-            st.rerun()
-
-
-row3 = st.columns(5)
-
-scientific_buttons = [
-    ("x³", "cube"),
-    ("∛x", "cbrt"),
-    ("x!", "factorial"),
-    ("1/x", "reciprocal"),
-    ("|x|", "absolute")
-]
-
-for col, (label, function) in zip(row3, scientific_buttons):
-
-    with col:
-
-        if st.button(label, use_container_width=True):
-            scientific_function(function)
-            st.rerun()
-
-# -------------------------------------------------
-# CONSTANTS
-# -------------------------------------------------
-st.markdown(
-    '<div class="section-title">Constants</div>',
-    unsafe_allow_html=True
-)
-
-c1, c2, c3 = st.columns(3)
-
-with c1:
-
-    if st.button("π", use_container_width=True):
-        add_to_display("π")
-        st.rerun()
-
-with c2:
-
-    if st.button("e", use_container_width=True):
-        add_to_display("e")
-        st.rerun()
-
-with c3:
-
-    if st.button("%", use_container_width=True):
-        scientific_function("percent")
-        st.rerun()
-
-# -------------------------------------------------
-# MAIN CALCULATOR BUTTONS
-# -------------------------------------------------
-st.markdown(
-    '<div class="section-title">Calculator</div>',
-    unsafe_allow_html=True
-)
-
-# Row 1
-cols = st.columns(4)
-
-buttons = ["C", "⌫", "(", ")"]
-
-for col, button in zip(cols, buttons):
-
-    with col:
-
-        if st.button(button, use_container_width=True):
-
-            if button == "C":
-                clear_display()
-
-            elif button == "⌫":
-                delete_last()
-
-            else:
-                add_to_display(button)
-
-            st.rerun()
-
-# Row 2
-cols = st.columns(4)
-
-buttons = ["7", "8", "9", "÷"]
-
-for col, button in zip(cols, buttons):
-
-    with col:
-
-        if st.button(button, use_container_width=True):
-
-            add_to_display(button)
-            st.rerun()
-
-# Row 3
-cols = st.columns(4)
-
-buttons = ["4", "5", "6", "×"]
-
-for col, button in zip(cols, buttons):
-
-    with col:
-
-        if st.button(button, use_container_width=True):
-
-            add_to_display(button)
-            st.rerun()
-
-# Row 4
-cols = st.columns(4)
-
-buttons = ["1", "2", "3", "-"]
-
-for col, button in zip(cols, buttons):
-
-    with col:
-
-        if st.button(button, use_container_width=True):
-
-            add_to_display(button)
-            st.rerun()
-
-# Row 5
-cols = st.columns(4)
-
-buttons = ["0", ".", "^", "+"]
-
-for col, button in zip(cols, buttons):
-
-    with col:
-
-        if st.button(button, use_container_width=True):
-
-            add_to_display(button)
-            st.rerun()
-
-# Equal button
-if st.button("=", use_container_width=True):
-
-    calculate_expression()
-    st.rerun()
-
-# -------------------------------------------------
-# CLOSE CALCULATOR
-# -------------------------------------------------
-st.markdown('</div>', unsafe_allow_html=True)
-
-# -------------------------------------------------
-# HISTORY
-# -------------------------------------------------
-st.markdown("---")
-
-st.subheader("📜 Calculation History")
-
-if st.session_state.history:
-
-    for item in st.session_state.history:
-
-        st.markdown(
-            f'<div class="history-item">{item}</div>',
-            unsafe_allow_html=True
-        )
-
-    if st.button("Clear History"):
-
-        st.session_state.history = []
-        st.rerun()
-
-else:
-
-    st.info("No calculations yet.")
-
-# -------------------------------------------------
-# FOOTER
-# -------------------------------------------------
-st.markdown("---")
-
-st.caption(
-    "🧮 Scientific Calculator • Built with Python & Streamlit"
-)
+    <div class="display">
+        <div class="previous" id="previous">Ready to calculate</div>
+        <input id="screen" type="text"
+            placeholder="0"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Calculator display">
+    </div>
+
+    <div class="grid">
+        <button class="clear" onclick="clearAll()">AC</button>
+        <button class="operator" onclick="backspace()">⌫</button>
+        <button class="operator" onclick="append('(')">(</button>
+        <button class="operator" onclick="append(')')">)</button>
+        <button class="operator" onclick="append('/')">÷</button>
+
+        <button class="science" onclick="fn('sin')">sin</button>
+        <button class="science" onclick="fn('cos')">cos</button>
+        <button class="science" onclick="fn('tan')">tan</button>
+        <button class="science" onclick="append('sqrt(')">√</button>
+        <button class="operator" onclick="append('*')">×</button>
+
+        <button class="science" onclick="fn('asin')">sin⁻¹</button>
+        <button class="science" onclick="fn('acos')">cos⁻¹</button>
+        <button class="science" onclick="fn('atan')">tan⁻¹</button>
+        <button class="science" onclick="append('^2')">x²</button>
+        <button class="operator" onclick="append('-')">−</button>
+
+        <button class="science" onclick="fn('log')">log</button>
+        <button class="science" onclick="fn('ln')">ln</button>
+        <button class="science" onclick="append('^')">xʸ</button>
+        <button class="science" onclick="append('!')">n!</button>
+        <button class="operator" onclick="append('+')">+</button>
+
+        <button onclick="append('7')">7</button>
+        <button onclick="append('8')">8</button>
+        <button onclick="append('9')">9</button>
+        <button class="science" onclick="append('π')">π</button>
+        <button class="science" onclick="append('%')">%</button>
+
+        <button onclick="append('4')">4</button>
+        <button onclick="append('5')">5</button>
+        <button onclick="append('6')">6</button>
+        <button class="science" onclick="append('e')">e</button>
+        <button class="science" onclick="append('Ans')">Ans</button>
+
+        <button onclick="append('1')">1</button>
+        <button onclick="append('2')">2</button>
+        <button onclick="append('3')">3</button>
+        <button onclick="append('.')">.</button>
+        <button class="equal" onclick="calculate()">=</button>
+
+        <button onclick="append('0')">0</button>
+        <button onclick="append('00')">00</button>
+        <button class="science" onclick="append('π*')">π×</button>
+        <button class="operator" onclick="append('-')">−</button>
+        <button class="operator" onclick="append('/')">÷</button>
+    </div>
+
+    <div class="history">
+        <div class="history-head">
+            <strong>Calculation History</strong>
+            <button onclick="clearHistory()">Clear</button>
+        </div>
+        <div id="historyList">Your calculations will appear here.</div>
+    </div>
+
+    <div class="footer">
+        Developed by Ayesha khaliq · Use your keyboard or click buttons · Enter to calculate
+    </div>
+</div>
+
+<script>
+const screen = document.getElementById("screen");
+const previous = document.getElementById("previous");
+const historyList = document.getElementById("historyList");
+const modeButton = document.getElementById("mode");
+
+let angleMode = "DEG";
+let lastAnswer = 0;
+let history = [];
+
+function toggleMode() {
+    angleMode = angleMode === "DEG" ? "RAD" : "DEG";
+    modeButton.textContent = angleMode;
+    screen.focus();
+}
+
+function append(value) {
+    if (screen.dataset.done === "true" && /^[0-9.]$/.test(value)) {
+        screen.value = "";
+    }
+    screen.dataset.done = "false";
+
+    const start = screen.selectionStart ?? screen.value.length;
+    const end = screen.selectionEnd ?? start;
+    const text = screen.value;
+
+    screen.value = text.slice(0, start) + value + text.slice(end);
+    const position = start + value.length;
+    screen.focus();
+    screen.setSelectionRange(position, position);
+}
+
+function fn(name) {
+    const start = screen.selectionStart ?? screen.value.length;
+    const end = screen.selectionEnd ?? start;
+    const text = screen.value;
+    const selected = text.slice(start, end);
+    let insertion = selected ? name + "(" + selected + ")" : name + "(";
+
+    screen.value = text.slice(0, start) + insertion + text.slice(end);
+    const position = start + insertion.length;
+    screen.focus();
+    screen.setSelectionRange(position, position);
+    screen.dataset.done = "false";
+}
+
+function clearAll() {
+    screen.value = "";
+    previous.textContent = "Ready to calculate";
+    screen.dataset.done = "false";
+    screen.focus();
+}
+
+function backspace() {
+    const start = screen.selectionStart ?? screen.value.length;
+    const end = screen.selectionEnd ?? start;
+
+    if (start !== end) {
+        screen.value = screen.value.slice(0, start) + screen.value.slice(end);
+        screen.setSelectionRange(start, start);
+    } else if (start > 0) {
+        screen.value = screen.value.slice(0, start - 1) + screen.value.slice(end);
+        screen.setSelectionRange(start - 1, start - 1);
+    }
+    screen.focus();
+    screen.dataset.done = "false";
+}
+
+function clearHistory() {
+    history = [];
+    historyList.textContent = "Your calculations will appear here.";
+}
+
+function factorial(n) {
+    if (!Number.isInteger(n) || n < 0 || n > 170) {
+        throw new Error("Factorial requires integer 0 to 170");
+    }
+    let result = 1;
+    for (let i = 2; i <= n; i++) result *= i;
+    return result;
+}
+
+function prepareExpression(raw) {
+    let s = raw.trim();
+    if (!s) throw new Error("Please enter an expression");
+
+    let balance = 0;
+    for (const char of s) {
+        if (char === "(") balance++;
+        if (char === ")") balance--;
+        if (balance < 0) throw new Error("Check your brackets");
+    }
+    s += ")".repeat(balance);
+
+    s = s.replace(/×/g, "*").replace(/÷/g, "/");
+    s = s.replace(/π/g, "Math.PI");
+    s = s.replace(/\bAns\b/g, "(" + lastAnswer + ")");
+    s = s.replace(/\be\b/g, "Math.E");
+    s = s.replace(/√/g, "sqrt");
+
+    // Factorial
+    s = s.replace(/(\d+(?:\.\d+)?|\))!/g, "factorial($1)");
+
+    // Exponent and percentage
+    s = s.replace(/\^/g, "**");
+    s = s.replace(/(\d+(?:\.\d+)?|\))%/g, "($1/100)");
+
+    // Implicit multiplications
+    s = s.replace(/(\d)(Math\.PI|Math\.E|\()/g, "$1*$2");
+    s = s.replace(/(\))(Math\.PI|Math\.E|\d|\()/g, "$1*$2");
+
+    return s;
+}
+
+function calculate() {
+    try {
+        const original = screen.value;
+        let expression = prepareExpression(original);
+
+        const evaluator = new Function(
+            "factorial", "sin", "cos", "tan", "asin", "acos", "atan", "log", "ln", "sqrt",
+            '"use strict"; return (' + expression + ');'
+        );
+
+        const sinFn = angleMode === "DEG" ? x => Math.sin(x * Math.PI / 180) : Math.sin;
+        const cosFn = angleMode === "DEG" ? x => Math.cos(x * Math.PI / 180) : Math.cos;
+        const tanFn = angleMode === "DEG" ? x => Math.tan(x * Math.PI / 180) : Math.tan;
+
+        const asinFn = angleMode === "DEG" ? x => Math.asin(x) * 180 / Math.PI : Math.asin;
+        const acosFn = angleMode === "DEG" ? x => Math.acos(x) * 180 / Math.PI : Math.acos;
+        const atanFn = angleMode === "DEG" ? x => Math.atan(x) * 180 / Math.PI : Math.atan;
+
+        const result = evaluator(
+            factorial,
+            sinFn,
+            cosFn,
+            tanFn,
+            asinFn,
+            acosFn,
+            atanFn,
+            x => Math.log10(x),
+            Math.log,
+            Math.sqrt
+        );
+
+        if (typeof result !== "number" || !Number.isFinite(result)) {
+            throw new Error("Result is undefined or out of range");
+        }
+
+        lastAnswer = result;
+        const formatted = Number(result.toPrecision(12)).toString();
+
+        previous.textContent = original + " =";
+        screen.value = formatted;
+        screen.dataset.done = "true";
+
+        history.unshift(original + " = " + formatted);
+        history = history.slice(0, 10);
+        historyList.innerHTML = "";
+        history.forEach(item => {
+            const row = document.createElement("div");
+            row.textContent = item;
+            historyList.appendChild(row);
+        });
+
+    } catch (error) {
+        previous.textContent = "Error: Invalid expression";
+    }
+}
+
+// Keyboard support
+screen.addEventListener("keydown", function(event) {
+    if (event.key === "Enter" || event.key === "=") {
+        event.preventDefault();
+        calculate();
+    } else if (event.key === "Escape") {
+        event.preventDefault();
+        clearAll();
+    }
+});
+
+document.addEventListener("keydown", function(event) {
+    if (event.key === "Escape") clearAll();
+});
+</script>
+</body>
+</html>
+"""
+
+components.html(html_code, height=880, scrolling=True)
